@@ -1,9 +1,10 @@
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
 import { ModuleData } from './../models/module.model';
-import { Http } from '@angular/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, Compiler, Inject, ReflectiveInjector, Injector, COMPILER_OPTIONS } from '@angular/core';
 
-import 'rxjs/add/operator/map';
+import * as fs from 'bro-fs';
+import { map } from 'rxjs/operators';
 
 // Needed for the new modules
 import * as AngularCore from '@angular/core';
@@ -14,24 +15,37 @@ import * as BrowserAnimations from '@angular/platform-browser/animations';
 
 declare var SystemJS: any;
 
+declare global {
+    interface Window { TEMPORARY: any; }
+}
+
 @Injectable()
 export class ModuleService {
     source = `http://${window.location.host}/`;
+    api = `/backend/applications/store/download`
 
-    constructor(private compiler: Compiler, private http: Http) {
+    constructor(private compiler: Compiler, private http: HttpClient) {
         console.log(compiler);
     }
 
     loadModules(): Observable<ModuleData[]> {
-        return this.http.get("./assets/modules.json")
-            .map(res => res.json());
+        return this.http.get<ModuleData[]>("./assets/modules.json")
     }
 
-    loadModule(moduleInfo: ModuleData): Observable<any> {
-        let url = this.source + moduleInfo.location;
-        return this.http.get(url)
-            .map(res => res.text())
-            .map(source => {
+    // load(): Promise<any> {
+    //     let promise: Promise<any> = new Promise ((resolve: any) => {
+    //         this.http.get<ModuleData[]>("./assets/modules.json").subscribe(modules => {
+
+    //         })
+    //     })
+
+    //     return promise
+    // }
+
+    loadModule(moduleInfo: ModuleData) {
+        let url = this.api;
+        return this.http.post(url, {moduleParams: moduleInfo}, { responseType: 'text' }).pipe(
+            map(source => {
                 const exports = {}; // this will hold module exports
                 const modules = {   // this is the list of modules accessible by plugins
                     '@angular/core': AngularCore,
@@ -50,7 +64,8 @@ export class ModuleService {
                 this.compiler.compileModuleAndAllComponentsSync(exports[`${moduleInfo.moduleName}`])
                 //console.log(exports); // disabled as this object is cleared anyway
                 return exports;
-            });
+            })
+        )
     }
 
     loadModuleSystemJS(moduleInfo: ModuleData): Promise<any> {
@@ -70,4 +85,5 @@ export class ModuleService {
             });
         });
     }
+    
 }

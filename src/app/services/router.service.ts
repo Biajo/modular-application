@@ -1,4 +1,4 @@
-import { Http } from '@angular/http';
+import { HttpClient } from '@angular/common/http';
 import { ModuleData } from './../models/module.model';
 import { Router, Route } from '@angular/router';
 import { Injectable, Compiler } from '@angular/core';
@@ -8,7 +8,7 @@ import { BehaviorSubject } from 'rxjs';
 export class RouterService {
     existingRoutes: BehaviorSubject<Route[]>;
 
-    constructor(private router: Router, private compiler: Compiler, private http: Http) { 
+    constructor(private router: Router) { 
         this.existingRoutes = new BehaviorSubject<Route[]>(this.routes);
     }
 
@@ -34,6 +34,9 @@ export class RouterService {
         if(this.routeIsRegistered(route.path)) return;
 
         this.router.config.push(route);
+        console.log('#############')
+        console.log(this.router.config)
+        console.log('#############')
         this.updateRouteConfig(this.router.config);
     }
 
